@@ -5,8 +5,8 @@ import enum
 from sqlalchemy import Enum
 
 from db.base import Base,Timestamp
+from models.enums import UserRole
 
-"
 
 class User(Base,Timestamp):
     __tablename__ = "users"

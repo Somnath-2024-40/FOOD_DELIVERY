@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
-from models.restaurant import RestaurantStatus  
 from models.enums import RestaurantStatus 
 
 # --- Base Schema (Shared fields) ---

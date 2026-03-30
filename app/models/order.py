@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 import enum
 
 from db.base import Base, Timestamp
+from models.enums import OrderStatus, PaymentStatus, PaymentMethod
 
 
 

@@ -12,7 +12,7 @@ class UserRole(enum.Enum):
     CUSTOMER = "customer"
     DELIVERY_AGENT = "delivery_agent"
     OWNER = "owner"
-    ADMIN = "admin
+    ADMIN = "admin"
 
 
 class OrderStatus(str, enum.Enum):
@@ -48,4 +48,3 @@ class MenuCategory(str, enum.Enum):
     OTHER = "other"
 
 
-    
