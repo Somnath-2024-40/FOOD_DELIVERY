@@ -6,14 +6,7 @@ import enum
 from db.base import Base, Timestamp
 
 
-class MenuCategory(str, enum.Enum):
-    APPETIZER = "appetizer"
-    MAIN_COURSE = "main course"
-    DESSERT = "dessert"
-    BEVERAGE = "beverage"
-    SIDE_DISH = "side dish"
-    COMBO = "combo"
-    OTHER = "other"
+
 
 
 class MenuItem(Base, Timestamp):                        

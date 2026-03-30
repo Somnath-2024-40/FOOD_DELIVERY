@@ -7,7 +7,7 @@ from fastapi import Depends
 
 from core.dependencies import DB, get_restaurant_owner      
 from models.user import User                                
-from utils.pagination import paginationDep, make_paginated_response, PeginateResponse
+from utils.pagination import paginationDep, make_paginated_response, PaginateResponse
 from schemas.menu import MenuItemCreate, MenuItemUpdate, MenuItemResponse  
 import services.restaurant as restaurant_service
 
@@ -15,11 +15,11 @@ import services.restaurant as restaurant_service
 
 router = APIRouter()
 
-@router.get("/restaurant/{restaurant_id}/menu/items",response_model=PeginateResponse[MenuItemResponse])
+@router.get("/restaurant/{restaurant_id}/menu/items",response_model=PaginateResponse[MenuItemResponse])
 async def list_menu_items(
     restaurant_id:int,
     db:DB,
-    pagination:PaginationDep,
+    pagination:paginationDep,
 
 ):
     await restaurant_service.get_restaurant_or_404(db,restaurant_id)
@@ -31,7 +31,7 @@ async def create_menu_item(
     restaurant_id:int,
     item_in:MenuItemCreate,
     db:DB,
-    current_user:Annotated[User,Depends(get_restaurant_owner)]
+    current_user=Depends(get_restaurant_owner)
 ):
     restaurant = await restaurant_service.get_restaurant_or_404(db,restaurant_id)
     return await restaurant_service.create_menu_item(db,restaurant,item_in,current_user)
@@ -41,7 +41,7 @@ async def delete_menu_item(
     restaurant_id:int,
     item_id:int,
     db:DB,
-    current_user:Annotated[User,Depends(get_restaurant_owner)]
+    current_user=Depends(get_restaurant_owner)
 ):
     menu_item = await restaurant_service.get_menu_item_or_404(db,item_id)
     await restaurant_service.delete_menu_item(db,restaurant,menu_item,current_user) 

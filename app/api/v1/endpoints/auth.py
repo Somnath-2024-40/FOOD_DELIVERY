@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 import logging
-from typing import Annotated
+from typing import Annotated,Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -86,7 +86,7 @@ async def refresh_token(
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(
-    current_user:Annotated[User,Depends(get_current_active_user)]
+    current_user=Depends(get_current_active_user)
 ):
     return current_user
 

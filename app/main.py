@@ -22,14 +22,14 @@ async def create_db_and_tables() -> None:
 
 
 async def create_first_superuser() -> None:
-    async with sessionlocal() as db:                            # ✅ proper async context manager
-        existing = await get_user_by_email(db, settings.FIRST_SUPERUSER_EMAIL)
+    async with sessionlocal() as db:                          
+        existing = await _get_user_by_email(db, settings.FIRST_SUPERUSER_EMAIL)
         if not existing:
-            await create_user(                                  # ✅ added await
+            await create_user(                                 
                 db,
                 UserCreate(
-                    email=settings.FIRST_SUPERUSER_EMAIL,
-                    password=settings.FIRST_SUPERUSER_PASSWORD,
+                    email=settings.FIRST_SUPERUSER_EMAIL.strip(),
+                    password=settings.FIRST_SUPERUSER_PASSWORD.strip(),
                     full_name="System Admin",
                     role=UserRole.ADMIN,
                 ),

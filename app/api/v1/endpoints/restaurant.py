@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated, Optional,Any
 
 from fastapi import APIRouter, Depends, Query, status
 
 from core.dependencies import DB, get_current_active_user, get_restaurant_owner  
-from utils.pagination import PeginateResponse, paginationDep, make_paginated_response  
+from utils.pagination import PaginateResponse, paginationDep, make_paginated_response  
 from schemas.restaurant import (
     RestaurantCreate,
     RestaurantUpdate,
@@ -18,18 +18,18 @@ import services.restaurant as restaurant_service
 
 router = APIRouter(prefix="/restaurants", tags=["restaurants"])
 
-@router.post("/",response_model = PeginateResponse[RestaurantResponse],status_code=status.HTTP_201_CREATED)
+@router.post("/",response_model = PaginateResponse[RestaurantResponse],status_code=status.HTTP_201_CREATED)
 async def create_restaurant(
     restaurant_in:RestaurantCreate,
     db:DB,
-    current_user:Annotated[User,Depends(get_current_active_user)]
+    current_user=Depends(get_current_active_user)
 ):
     return await restaurant_service.create_restaurant(db,current_user,restaurant_in)
 
-@router.get("/", response_model=PeginateResponse[RestaurantListResponse])
+@router.get("/", response_model=PaginateResponse[RestaurantListResponse])
 async def list_restaurants(
     db: DB,
-    pagination: PaginationDep,
+    pagination: paginationDep,
     cuisine_type: Optional[str] = Query(None),
     restaurant_status: Optional[RestaurantStatus] = Query(None),
 ):
@@ -47,7 +47,7 @@ async def update_restaurant(
     restaurant_id:int,
     data:RestaurantUpdate,
     db:DB,
-    current_user:Annotated[User,Depends(get_restaurant_owner)]
+    current_user=Depends(get_restaurant_owner)
 ):
     restaurant = await restaurant_service.get_restaurant_or_404(db,restaurant_id)
     return await restaurant_service.update_restaurant(db,restaurant,data,current_user)
@@ -57,7 +57,7 @@ async def update_restaurant(
 async def delete_restaurant(                                      # ✅ async
     restaurant_id: int,
     db: DB,
-    owner: Annotated[User, Depends(get_restaurant_owner)],
+    owner=Depends(get_restaurant_owner),
 ):
     restaurant = await restaurant_service.get_restaurant_or_404(db, restaurant_id)
     await restaurant_service.delete_restaurant(db, restaurant, owner)

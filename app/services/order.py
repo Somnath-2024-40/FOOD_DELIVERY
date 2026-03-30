@@ -31,9 +31,9 @@ def _to_decimal(vlaue:float | Decimal,places:int=2):
 _VALID_TRANSITIONS : dict[OrderStatus,frozenset[OrderStatus]] = {
     OrderStatus.PENDING : frozenset({OrderStatus.CONFIRMED,OrderStatus.CANCELLED}),
     OrderStatus.CONFIRMED : frozenset({OrderStatus.PREPARING,OrderStatus.CANCELLED}),
-    OrderStatus.PREPARING : frozenset({OrderStatus.READY_FOR_PICKUP,OrderStatus.READY_FOR_DELIVERY,OrderStatus.CANCELLED}),
+    OrderStatus.PREPARING : frozenset({OrderStatus.READY_FOR_PICKUP,OrderStatus.OUT_FOR_DELIVERY,OrderStatus.CANCELLED}),
     OrderStatus.READY_FOR_PICKUP : frozenset({OrderStatus.DELIVERED,OrderStatus.CANCELLED}),
-    OrderStatus.READY_FOR_DELIVERY : frozenset({OrderStatus.DELIVERED,OrderStatus.CANCELLED}),
+    OrderStatus.OUT_FOR_DELIVERY : frozenset({OrderStatus.DELIVERED,OrderStatus.CANCELLED}),
     OrderStatus.DELIVERED : frozenset(),
     OrderStatus.CANCELLED : frozenset()
 }

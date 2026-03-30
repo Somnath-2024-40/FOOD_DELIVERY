@@ -6,11 +6,7 @@ from sqlalchemy import Enum
 
 from db.base import Base,Timestamp
 
-class UserRole(enum.Enum):
-    CUSTOMER = "customer"
-    DELIVERY_AGENT = "delivery_agent"
-    OWNER = "owner"
-    ADMIN = "admin"
+"
 
 class User(Base,Timestamp):
     __tablename__ = "users"
@@ -26,5 +22,5 @@ class User(Base,Timestamp):
 
     # relationships
     restaurants = relationship("Restaurant", back_populates="owner")
-    orders = relationship("Order", back_populates="customer")
-    delivered_orders = relationship("Order", back_populates="delivery_agent")
+    orders = relationship("Order", foreign_keys="[Order.customer_id]", back_populates="customer")
+    delivered_orders = relationship("Order", foreign_keys="[Order.delivery_agent_id]", back_populates="delivery_agent")

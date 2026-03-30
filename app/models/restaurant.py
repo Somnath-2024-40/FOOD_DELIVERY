@@ -4,11 +4,9 @@ from sqlalchemy.orm import relationship
 from db.base import Timestamp
 
 from db.base import Base
+from models.enums import RestaurantStatus
 
-class RestaurantStatus(str,enum.Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-    SUSPENDED = "suspended"
+
 
 class Restaurant(Base, Timestamp):
     __tablename__ = "restaurants"

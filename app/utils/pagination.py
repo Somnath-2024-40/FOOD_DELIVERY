@@ -9,7 +9,7 @@ from fastapi import Depends,Query
 
 T = TypeVar("T")
 
-class PeginateResponse(BaseModel,Generic[T]):
+class PaginateResponse(BaseModel,Generic[T]):
     items:list[T]
     total:int
     page:int
