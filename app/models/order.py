@@ -11,7 +11,7 @@ class OrderStatus(str, enum.Enum):
     CONFIRMED = "confirmed"
     PREPARING = "preparing"
     READY_FOR_PICKUP = "ready_for_pickup"
-    OUT_FOR_DELIVERY = "out_for_delivery"               # ✅ was missing — used in service
+    OUT_FOR_DELIVERY = "out_for_delivery"               
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
 
@@ -31,13 +31,13 @@ class PaymentMethod(str, enum.Enum):
 
 
 class Order(Base, Timestamp):
-    __tablename__ = "orders"                            # ✅ plural — 'order' is reserved in PostgreSQL
+    __tablename__ = "orders"                            
 
     id = Column(Integer, primary_key=True, index=True)
     order_number = Column(String(30), unique=True, nullable=False, index=True)
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
 
-    subtotal = Column(Numeric(10, 2), nullable=False)   # ✅ Numeric not Float
+    subtotal = Column(Numeric(10, 2), nullable=False)   
     delivery_fee = Column(Numeric(10, 2), default=0.0)
     discount = Column(Numeric(10, 2), default=0.0)
     total_amount = Column(Numeric(10, 2), nullable=False)
@@ -46,7 +46,7 @@ class Order(Base, Timestamp):
     payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.CASH)
 
     delivery_address = Column(Text, nullable=False)
-    special_instructions = Column(Text, nullable=True)  # ✅ fixed typo spacial → special
+    special_instructions = Column(Text, nullable=True) 
     estimated_delivery_time = Column(Integer, nullable=True)
 
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -64,12 +64,12 @@ class OrderItem(Base, Timestamp):
 
     id = Column(Integer, primary_key=True, index=True)
     quantity = Column(Integer, nullable=False)
-    unit_price = Column(Numeric(10, 2), nullable=False)  # ✅ Numeric not Float
+    unit_price = Column(Numeric(10, 2), nullable=False)  
     total_price = Column(Numeric(10, 2), nullable=False)
-    special_request = Column(Text, nullable=True)        # ✅ fixed typo spacial → special
+    special_request = Column(Text, nullable=True)        
 
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)       # ✅ matches __tablename__
-    menu_item_id = Column(Integer, ForeignKey("menu_items.id"), nullable=False)  # ✅ matches __tablename__
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)       
+    menu_item_id = Column(Integer, ForeignKey("menu_items.id"), nullable=False)  
 
     order = relationship("Order", back_populates="items")
     menu_item = relationship("MenuItem", back_populates="order_items")
