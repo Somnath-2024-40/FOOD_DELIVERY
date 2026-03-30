@@ -32,7 +32,7 @@ class RestaurantUpdate(BaseModel):
     min_order_price: Optional[float] = None
     delivery_fee: Optional[float] = None
     estimated_delivery_time: Optional[int] = None
-    status: Optional[RestaurantStatus] = None
+    status: Optional[str] = None
 
 # --- Full Detail Response ---
 class RestaurantResponse(RestaurantBase):
@@ -65,5 +65,7 @@ class RestaurantListResponse(BaseModel):
 
 # --- CRITICAL: Rebuild models to resolve forward references ---
 # This fixes the "class not fully defined" error during OpenAPI generation
+RestaurantCreate.model_rebuild()
+RestaurantUpdate.model_rebuild()
 RestaurantResponse.model_rebuild()
 RestaurantListResponse.model_rebuild()
