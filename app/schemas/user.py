@@ -1,3 +1,5 @@
+
+
 from pydantic import BaseModel,EmailStr
 from typing import Optional
 from datetime import datetime
@@ -7,7 +9,7 @@ from models.user import UserRole
 class UserBase(BaseModel):
     email:EmailStr
     full_name:str
-    phone:Optional[str]=None
+    phone_number:Optional[str]=None
     address:Optional[str]=None
     role:UserRole = UserRole.CUSTOMER
 
@@ -18,7 +20,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(UserBase):
     full_name:Optional[str]=None
-    phone:Optional[str]=None
+    phone_number:Optional[str]=None
     address:Optional[str]=None
     password:Optional[str]=None
 

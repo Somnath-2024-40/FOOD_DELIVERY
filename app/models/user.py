@@ -15,7 +15,7 @@ class User(Base,Timestamp):
     email = Column(String(255),nullable = False,unique = True)
     hashed_password = Column(String(255),nullable = False)
     full_name = Column(String(255),nullable = False)
-    phone_number = Column(String(20),nullable = False)
+    phone_number = Column(String(20), nullable=True)
     role = Column(Enum(UserRole),default=UserRole.CUSTOMER,nullable = False)
     is_active = Column(Boolean, default=True)
     address = Column(String(255),nullable = True)

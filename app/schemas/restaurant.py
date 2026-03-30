@@ -8,7 +8,7 @@ class RestaurantBase(BaseModel):
     name: str
     description: Optional[str] = None
     address: str
-    phone: Optional[str] = None
+    phone_number: Optional[str] = None
     email: Optional[EmailStr] = None
     image_url: Optional[str] = None
     cuisine_type: Optional[str] = None
@@ -25,7 +25,7 @@ class RestaurantUpdate(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
     description: Optional[str] = None
-    phone: Optional[str] = None
+    phone_number: Optional[str] = None
     email: Optional[EmailStr] = None
     image_url: Optional[str] = None
     cuisine_type: Optional[str] = None
@@ -62,10 +62,3 @@ class RestaurantListResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
-
-# --- CRITICAL: Rebuild models to resolve forward references ---
-# This fixes the "class not fully defined" error during OpenAPI generation
-RestaurantCreate.model_rebuild()
-RestaurantUpdate.model_rebuild()
-RestaurantResponse.model_rebuild()
-RestaurantListResponse.model_rebuild()

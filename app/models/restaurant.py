@@ -15,7 +15,7 @@ class Restaurant(Base, Timestamp):
     name = Column(String(200), nullable=False, index=True)
     description = Column(Text, nullable=True)
     address = Column(Text, nullable=False)
-    phone = Column(String(20), nullable=True)
+    phone_number = Column(String(20), nullable=True)
     email = Column(String(255), nullable=True)
     image_url = Column(String(500), nullable=True)
     cuisine_type = Column(String(100), nullable=True)
