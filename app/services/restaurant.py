@@ -123,7 +123,7 @@ async def delete_restaurant(
 
     _assert_owner_or_admin(restaurant,owner)
 
-    restaurant = await get_restaurant_or_404(db,restaurant_id)
+    
     restaurant.is_active = False 
 
     try:
@@ -165,7 +165,7 @@ async def list_menu(
     
 ) -> Tuple[List[MenuItem],int]:
 
-    page_size = await _clamp_page_size(page_size)
+    page_size = _clamp_page_size(page_size)
 
     base = select(MenuItem).where(MenuItem.restaurant.id == restaurant_id)
 

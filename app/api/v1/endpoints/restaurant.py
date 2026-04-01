@@ -66,4 +66,4 @@ async def delete_restaurant(
     owner=Depends(get_restaurant_owner),
 ):
     restaurant = await restaurant_service.get_restaurant_or_404(db, restaurant_id)
-    await restaurant_service.delete_restaurant(db, restaurant, owner)
+    await restaurant_service.delete_restaurant(db,restaurant_id, restaurant, owner)

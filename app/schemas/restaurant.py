@@ -58,6 +58,7 @@ class RestaurantListResponse(BaseModel):
     estimated_delivery_time: int
     status: RestaurantStatus
     image_url: Optional[str] = None
+    is_active: bool
 
     model_config = {
         "from_attributes": True
