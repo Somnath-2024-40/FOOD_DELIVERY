@@ -45,4 +45,4 @@ async def delete_menu_item(
     current_user=Depends(get_restaurant_owner)
 ):
     menu_item = await restaurant_service.get_menu_item_or_404(db,item_id)
-    await restaurant_service.delete_menu(db,restaurant,menu_item,current_user) 
+    await restaurant_service.delete_menu(db,current_user,menu_item) 

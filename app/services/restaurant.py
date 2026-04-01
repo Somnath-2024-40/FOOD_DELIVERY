@@ -167,7 +167,7 @@ async def list_menu(
 
     page_size = _clamp_page_size(page_size)
 
-    base = select(MenuItem).where(MenuItem.restaurant.id == restaurant_id)
+    base = select(MenuItem).where(MenuItem.restaurant_id == restaurant_id)
 
     if only_available:
         base = base.where(MenuItem.is_available.is_(True))
@@ -226,7 +226,7 @@ async def delete_menu(
     item:ItemMenu
 ) ->None:
 
-    _assert_owner_or_admin(restaurant,requester)
+    _assert_owner_or_admin(Restaurant,requester)
 
     item.is_available = False
 
