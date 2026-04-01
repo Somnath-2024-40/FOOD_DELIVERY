@@ -116,11 +116,11 @@ async def delete_user(db: AsyncSession, user: User) -> None:
         raise
 
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> Optional[User]:
-    user = await _get_user_by_email(db, email)
+    user = await _get_user_by_email(db, email.strip())
     if not user:
         return None
     if user.is_active is False:
         return None
-    if not verify_password(password, user.hashed_password):  # ← fixed: not async
+    if not verify_password(password.strip(), user.hashed_password):  
         return None
     return user

@@ -21,20 +21,47 @@ async def create_db_and_tables() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
+# async def create_first_superuser() -> None:
+#     async with sessionlocal() as db:                          
+#         existing = await _get_user_by_email(db, settings.FIRST_SUPERUSER_EMAIL)
+#         if not existing:
+#             await create_user(                                 
+#                 db,
+#                 UserCreate(
+#                     email=settings.FIRST_SUPERUSER_EMAIL.strip(),
+#                     password=settings.FIRST_SUPERUSER_PASSWORD.strip(),
+#                     full_name="System Admin",
+#                     role=UserRole.ADMIN,
+#                 ),
+#             )
+#             print("First superuser created.")
+
+
 async def create_first_superuser() -> None:
-    async with sessionlocal() as db:                          
-        existing = await _get_user_by_email(db, settings.FIRST_SUPERUSER_EMAIL)
+    async with sessionlocal() as db:
+        email = settings.FIRST_SUPERUSER_EMAIL.strip()
+        existing = await _get_user_by_email(db, email)
+        
         if not existing:
-            await create_user(                                 
+            # Create the user first
+            new_user = await create_user(
                 db,
                 UserCreate(
-                    email=settings.FIRST_SUPERUSER_EMAIL.strip(),
+                    email=email,
                     password=settings.FIRST_SUPERUSER_PASSWORD.strip(),
                     full_name="System Admin",
-                    role=UserRole.ADMIN,
-                ),
+                )
             )
-            print("First superuser created.")
+            
+            new_user.role = UserRole.ADMIN
+            await db.commit()
+            print(f"First superuser {email} and  and password {settings.FIRST_SUPERUSER_PASSWORD} created and promoted to ADMIN.")
+        else:
+           
+            if existing.role != UserRole.ADMIN:
+                existing.role = UserRole.ADMIN
+                await db.commit()
+                print(f"Superuser {email} role corrected to ADMIN.")
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────

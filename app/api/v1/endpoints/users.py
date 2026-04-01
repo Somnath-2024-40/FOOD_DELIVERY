@@ -14,7 +14,7 @@ from schemas.user import UserResponse, UserUpdate, UserAdminUpdate
 import services.user as user_service
 
 
-router = APIRouter(prefix="/users", tags=["users"])               
+router = APIRouter()               
 
 
 @router.get("/", response_model=PaginateResponse[UserResponse])
@@ -23,7 +23,7 @@ async def list_users(
     db: DB,
     current_user=Depends(admin_user),      
 ):
-    items, total = await user_service.get_users(db, **pagination.to_dict())  
+    items, total = await user_service.get_users_list(db,current_user.id)
     return make_paginated_response(items, total, pagination)     
 
 

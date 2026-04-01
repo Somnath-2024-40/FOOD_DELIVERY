@@ -35,8 +35,8 @@ def _400(detail:str)->HTTPException:
     )
 
 def _token_pair(user_id:int)->Token:
-    access_token = create_access_token({"sub": str(user_id)})
-    refresh_token = create_refresh_token({"sub": str(user_id)})
+    access_token = create_access_token(user_id)
+    refresh_token = create_refresh_token(user_id)
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 async def _resolve_active_user(

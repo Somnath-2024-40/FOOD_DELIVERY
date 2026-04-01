@@ -16,15 +16,19 @@ import services.restaurant as restaurant_service
 
 
 
-router = APIRouter(prefix="/restaurants", tags=["restaurants"])
+router = APIRouter()
 
-@router.post("/",response_model = PaginateResponse[RestaurantResponse],status_code=status.HTTP_201_CREATED)
+@router.post("/",response_model = RestaurantResponse,status_code=status.HTTP_201_CREATED)
 async def create_restaurant(
-    restaurant_in:RestaurantCreate,
-    db:DB,
-    current_user=Depends(get_current_active_user)
+    restaurant_in: RestaurantCreate,
+    db: DB,
+    current_user = Depends(get_current_active_user)
 ):
-    return await restaurant_service.create_restaurant(db,current_user,restaurant_in)
+    return await restaurant_service.create_restaurant(
+        db=db,
+        restaurant_in=restaurant_in,
+        owner=current_user
+    )
 
 @router.get("/", response_model=PaginateResponse[RestaurantListResponse])
 async def list_restaurants(
@@ -33,11 +37,13 @@ async def list_restaurants(
     cuisine_type: Optional[str] = Query(None),
     restaurant_status: Optional[RestaurantStatus] = Query(None),
 ):
-    restaurants, total = await restaurant_service.list_restaurants(
+    restaurants, total = await restaurant_service.list_restaurant(
         db,
-        cuisine_type=cuisine_type,
         restaurant_status=restaurant_status,
-        **pagination.to_dict()          
+        page= pagination.page,
+        page_size= pagination.page_size,
+        cuisine_type=cuisine_type
+                 
     )
     return make_paginated_response(restaurants, total, pagination)
 
@@ -54,7 +60,7 @@ async def update_restaurant(
 
 
 @router.delete("/{restaurant_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_restaurant(                                      # ✅ async
+async def delete_restaurant(                                      
     restaurant_id: int,
     db: DB,
     owner=Depends(get_restaurant_owner),

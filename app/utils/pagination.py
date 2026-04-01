@@ -47,8 +47,8 @@ paginationDep = Annotated[PaginationParams,Depends(PaginationParams)]
 
 def make_paginated_response(
     items: List[T], total: int, p: PaginationParams
-) -> PaginatedResponse[T]:
-    return PaginatedResponse(
+) -> PaginateResponse[T]:
+    return PaginateResponse(
         items=items, 
         total=total, 
         page=p.page, 

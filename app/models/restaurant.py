@@ -21,7 +21,7 @@ class Restaurant(Base, Timestamp):
     cuisine_type = Column(String(100), nullable=True)
     rating = Column(Float, default=0.0)
     total_ratings = Column(Integer, default=0)
-    min_order_amount = Column(Float, default=0.0)
+    min_order_price = Column(Float, default=0.0)
     delivery_fee = Column(Float, default=0.0)
     estimated_delivery_time = Column(Integer, default=30)  # minutes
     status = Column(Enum(RestaurantStatus), default=RestaurantStatus.OPEN)

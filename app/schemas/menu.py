@@ -7,6 +7,7 @@ from datetime import datetime
 from models.menu import MenuCategory 
 
 class MenuItemBase(BaseModel):
+    
     name:str
     description:str
     price:float
@@ -14,7 +15,7 @@ class MenuItemBase(BaseModel):
     category:MenuCategory = MenuCategory.OTHER
     is_available:bool = True
     is_vegetarian:bool = False
-    is_vagen:bool = False
+    is_vegan:bool = False
     calories:Optional[int] = None
     preparation_time:Optional[int] = None
 
@@ -29,7 +30,7 @@ class MenuItemUpdate(BaseModel):
     category:Optional[MenuCategory]=None
     is_available:Optional[bool]=None
     is_vegetarian:Optional[bool]=None
-    is_vagen:Optional[bool]=None
+    is_vegan:Optional[bool]=None
     calories:Optional[int]=None
     preparation_time:Optional[int]=None
 

@@ -8,6 +8,7 @@ from fastapi import HTTPException, status as http_status
 
 from models.restaurant import Restaurant,RestaurantStatus
 from models.menu import MenuItem,MenuCategory
+from models.enums import UserRole
 from models.user import User
 from schemas.restaurant import RestaurantCreate,RestaurantUpdate
 from schemas.menu import MenuItemCreate
@@ -20,12 +21,12 @@ def _clamp_page_size(page_size:int)->int:
     return max(1,min(page_size,MAX_PAGE_SIZE))
 
 async def _count(db:AsyncSession,base_query)->int:
-    Query = select(func.count()).selectinload(base_query.subquery())
+    Query = select(func.count()).select_from(base_query.subquery())
     result =  await db.execute(Query)
     return result.scalar_one()
 
 def _assert_owner_or_admin(restaurant:Restaurant,user:User)->None:
-    if user.Role == UserRole.ADMIN:
+    if user.role == UserRole.ADMIN:
         return
     if restaurant.owner_id != user.id:
         raise HTTPException(
@@ -57,10 +58,11 @@ async def list_restaurant(
     db:AsyncSession,
     page:int = 1,
     page_size:int = 10,
+    cuisine_type:Optional[str] = None,
     restaurant_status:Optional[RestaurantStatus] = None
 )->Tuple[List[Restaurant],int]:
 
-    page_size = await _clamp_page_size(page_size)
+    page_size = _clamp_page_size(page_size)
 
     base = select(Restaurant).where(Restaurant.is_active.is_(True))
 
@@ -79,7 +81,7 @@ async def create_restaurant(
     owner:User
 )->Restaurant:
 
-    restaurant = Restaurant(**restaurant_in.dict(),owner_id = owner.id)
+    restaurant = Restaurant(**restaurant_in.model_dump(),owner_id = owner.id)
     try:
         db.add(restaurant)
         await db.commit()
