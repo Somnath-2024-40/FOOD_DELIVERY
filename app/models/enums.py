@@ -8,7 +8,7 @@ class RestaurantStatus(str,enum.Enum):
     SUSPENDED = "suspended"
 
 
-class UserRole(enum.Enum):
+class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
     DELIVERY_AGENT = "delivery_agent"
     OWNER = "owner"

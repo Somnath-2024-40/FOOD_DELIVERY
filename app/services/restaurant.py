@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status as http_status
 import os
+import uuid
 import shutil
 from fastapi import UploadFile
 
@@ -148,7 +149,7 @@ async def delete_restaurant(
 async def get_menu_item(
     db:AsyncSession,
     item_id:int
-)->optional[MenuItem]:
+)->Optional[MenuItem]:
 
     Query = select(MenuItem).where(MenuItem.id == item_id).options(selectinload(MenuItem.restaurant))
     result = await db.execute(Query)
@@ -193,22 +194,57 @@ async def list_menu(
 async def create_menu(
     db:AsyncSession,
     restaurant : Restaurant,
-    menu_item_in:MenuItemCreate,
+    item_in:MenuItemCreate,
+    
+    image:UploadFile,
+
+
     requester:User
 ) ->MenuItem:
 
-    _assert_owner_or_admin(restaurant,requester)
+    _assert_owner_or_admin(restaurant, requester)
 
-    menu_item = MenuItem(**menu_item_in.dict(), restaurant_id=restaurant.id)
+    upload_dir = "/app/uploads/menu_items"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # validate FIRST
+    if not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Invalid image type")
+
+    extension = os.path.splitext(image.filename)[1]
+    filename = f"{uuid.uuid4()}{extension}"
+
+    join_path = os.path.join(upload_dir, filename)
+    image_url = f"/uploads/menu_items/{filename}"
 
     try:
+        # write ONCE
+        with open(join_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+        menu_item = MenuItem(
+            **item_in.model_dump(),
+            restaurant_id=restaurant.id,
+            image_url=image_url
+        )
+
         db.add(menu_item)
         await db.commit()
         await db.refresh(menu_item)
+
     except Exception:
         await db.rollback()
+
+        if os.path.exists(join_path):
+            os.remove(join_path)
+
         raise
+
     return menu_item
+
+
+
+
 
 async def update_menu(
     db:AsyncSession,
@@ -248,6 +284,9 @@ async def delete_menu(
     except Exception:
         await db.rollback()
         raise
+
+
+
 
 
 

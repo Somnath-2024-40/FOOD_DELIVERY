@@ -97,3 +97,7 @@ class RestaurantListResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+# At the very bottom of your restaurant schema file
+RestaurantCreate.model_rebuild()
