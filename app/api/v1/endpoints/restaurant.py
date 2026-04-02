@@ -1,7 +1,7 @@
 
 from typing import Annotated, Optional,Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status,Form, UploadFile,File
 from models.enums import RestaurantStatus
 from pydantic import BaseModel, EmailStr
 from core.dependencies import DB, get_current_active_user, get_restaurant_owner  
@@ -20,13 +20,15 @@ router = APIRouter()
 
 @router.post("/",response_model = RestaurantResponse,status_code=status.HTTP_201_CREATED)
 async def create_restaurant(
-    restaurant_in: RestaurantCreate,
+    restaurant_in: Annotated[RestaurantCreate,Depends(RestaurantCreate.as_form)],
+    image:Annotated[UploadFile, File()],
     db: DB,
     current_user = Depends(get_current_active_user)
 ):
     return await restaurant_service.create_restaurant(
         db=db,
         restaurant_in=restaurant_in,
+        image=image,
         owner=current_user
     )
 

@@ -25,7 +25,7 @@ async def create_order(
     db:DB,
     current_user=Depends(get_current_active_user)
 ):
-    return await order_service.create_order(db,current_user,order_in)
+    return await order_service.create_order(db,order_in,current_user)
 
 @router.get("/my",response_model = PaginateResponse[OrderSummary])
 async def get_my_orders(

@@ -5,6 +5,9 @@ from typing import Optional,Tuple,List
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status as http_status
+import os
+import shutil
+from fastapi import UploadFile
 
 from models.restaurant import Restaurant,RestaurantStatus
 from models.menu import MenuItem,MenuCategory
@@ -78,10 +81,19 @@ async def list_restaurant(
 async def create_restaurant(
     db:AsyncSession,
     restaurant_in:RestaurantCreate,
+    image:UploadFile,
     owner:User
 )->Restaurant:
 
-    restaurant = Restaurant(**restaurant_in.model_dump(),owner_id = owner.id)
+    upload_dir = "/app/uploads/restaurants"
+    os.makedirs(upload_dir, exist_ok=True)
+    join_path = os.path.join(upload_dir, image.filename)
+
+    with open(join_path,"wb") as k:
+        shutil.copyfileobj(image.file,k)
+
+    image_url = f"/uploads/restaurants/{image.filename}"
+    restaurant = Restaurant(**restaurant_in.model_dump(),owner_id = owner.id, image_url=image_url)
     try:
         db.add(restaurant)
         await db.commit()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import HTTPException, status
+from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import uuid
@@ -22,7 +23,7 @@ MAX_PAGE_SIZE = 50
 def _generate_order_number(session:AsyncSession) ->str:
     return "ORD-" + uuid.uuid4().hex[:8].upper()
 
-def _to_decimal(vlaue:float | Decimal,places:int=2):
+def _to_decimal(value:float | Decimal,places:int=2):
     quantizer = 10 ** places
     return Decimal(value * quantizer).quantize(Decimal(1), rounding=ROUND_HALF_UP)
 
@@ -129,11 +130,12 @@ async def create_order(
     order_in:OrderCreate,
     customer:User
 )->Order:
+    
 
     restaurant_result = await db.execute(
-        select(Restaurant).where(Restaurant.id == order_in.restaurant_id,Restaurat.status == RestaurantStatus.OPEN,Restaurant.is_active.is_(True))
+        select(Restaurant).where(Restaurant.id == order_in.restaurant_id,Restaurant.status == RestaurantStatus.OPEN,Restaurant.is_active.is_(True))
     )
-    restaurant = Optional[Restaurant] = restaurant_result.scalar_one_or_none()
+    restaurant =restaurant_result.scalar_one_or_none()
     if restaurant is None:
         raise HTTPException(
             status_code = status.HTTP_400_BAD_REQUEST,
@@ -153,7 +155,7 @@ async def create_order(
         )
     
 
-    requested_ids = [item.item_menu_id for item in order_in.items]
+    requested_ids = [item.menu_item_id for item in order_in.items]
 
     menu_result = await db.execute(
         select(MenuItem).where(
@@ -167,38 +169,38 @@ async def create_order(
 
 
 # ---------build order and made calculations
-    subbtotal = Decimal(0.0)
+    subtotal = Decimal(0.0)
     order_items:List[OrderItem] = []
 
     for item_in in order_in.items:
-        menu_item = menu_items.get(item_in.item_menu_id)
+        menu_item = menu_items.get(item_in.menu_item_id)
         if not menu_item:
             raise HTTPException(
-                HTTPException(
+                
                     status_code = status.HTTP_400_BAD_REQUEST,
-                    detail = f"Menu item {item_in.item_menu_id} not found"
-                )
+                    detail = f"Menu item {item_in.menu_item_id} not found"
+                
             )
         
 
         unit_price = _to_decimal(menu_item.price)
-        line_total =_to_decimal(unit_price * item_in.qantity)
+        line_total =_to_decimal(unit_price * item_in.quantity)
         subtotal += line_total
         
         order_items.append(
             OrderItem(
                 menu_item_id = menu_item.id,
-                quantity = item_in.qantity,
+                quantity = item_in.quantity,
                 unit_price = unit_price,
                 total_price = line_total,
-                spacial_request = item_in.spacial_request
+                special_request = item_in.special_request
             )
         )
 
     
 # ---------------------------
 
-    min_order = _to_decimal(restaurant.min_order_amount)
+    min_order = _to_decimal(restaurant.min_order_price)
     if subtotal <min_order:
         raise HTTPException(
             status_code = status.HTTP_400_BAD_REQUEST,
@@ -209,16 +211,16 @@ async def create_order(
     total_amount = _to_decimal(subtotal + delivery_fee)
 
     order = Order(
-        order_number = _generate_order_number(), 
+        order_number = _generate_order_number(AsyncSession), 
         subtotal = subtotal,
         delivery_fee = delivery_fee,
         discount = Decimal("0.0"),
         total_amount = total_amount,
         payment_method = order_in.payment_method,
         delivery_address = order_in.delivery_address,
-        spacial_instructions = order_in.spacial_instructions,
+        special_request = order_in.special_request,
         estimated_delivery_time = restaurant.estimated_delivery_time,
-        items = Order_items,
+        items = order_items,
         customer_id = customer.id,
         restaurant_id = restaurant.id
     )

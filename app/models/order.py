@@ -24,7 +24,7 @@ class Order(Base, Timestamp):
     payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.CASH)
 
     delivery_address = Column(Text, nullable=False)
-    special_instructions = Column(Text, nullable=True) 
+    special_request = Column(Text, nullable=True) 
     estimated_delivery_time = Column(Integer, nullable=True)
 
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False)

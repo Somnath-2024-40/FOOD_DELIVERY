@@ -9,14 +9,14 @@ from schemas.menu import MenuItemResponse
 class orderItemCreate(BaseModel):
     menu_item_id:int
     quantity:int
-    spacial_request:Optional[str]=None
+    special_request:Optional[str]=None
 
 class OrderItemResponse(BaseModel):
     id:int
     quantity:int
     unit_price:float
     total_price:float
-    spacial_request:Optional[str]=None
+    special_request:Optional[str]=None
 
     model_config = {
         "from_attributes":True
@@ -28,7 +28,7 @@ class OrderCreate(BaseModel):
     delivery_address:str
     items:List[orderItemCreate]
     payment_method:PaymentMethod = PaymentMethod.CASH
-    spacial_instructions:Optional[str]=None
+    special_request:Optional[str]=None
 
 class OrderStatusUpdate(BaseModel):
     status:OrderStatus
@@ -47,7 +47,7 @@ class OrderResponse(BaseModel):
     payment_status:PaymentStatus
     payment_method:PaymentMethod
     delivery_address:str
-    spacial_instructions:Optional[str]=None
+    special_request:Optional[str]=None
     estimated_delivery_time:Optional[int]=None
     customer_id:int
     restaurant_id:int
