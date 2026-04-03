@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional,List
 from datetime import datetime
 
+
 from models.order import PaymentStatus,OrderStatus,PaymentMethod
 from schemas.menu import MenuItemResponse
 
@@ -31,7 +32,7 @@ class OrderCreate(BaseModel):
     special_request:Optional[str]=None
 
 class OrderStatusUpdate(BaseModel):
-    status:OrderStatus
+    status:OrderStatus=OrderStatus.PENDING
 
 class OrderAssignDelivery(BaseModel):
     delivery_agent_id:int   

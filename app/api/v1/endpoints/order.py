@@ -1,4 +1,6 @@
 from typing import Annotated,Any
+from fastapi import APIRouter, Depends, status, Form
+from fastapi import Header
 
 from fastapi import APIRouter, Depends, status,Header
 
@@ -12,6 +14,7 @@ from schemas.order import (
     OrderStatusUpdate,
     OrderAssignDelivery,
 )
+from models.enums import OrderStatus
 import services.order as order_service 
 
 
@@ -59,19 +62,19 @@ async def get_all_orders(
     current_user=Depends(admin_user),
     
 ):
-    orders,total = await order_service.list_all_orders(db,**pagination.to_dict())
+    orders,total = await order_service.get_all_order(db,**pagination.to_dict())
     return make_paginated_response(orders,total,pagination)
 
 @router.patch("/{order_id}/status",response_model = OrderResponse)
 async def update_order_status(
     db:DB,
     order_id:int,
-    status_update:OrderStatusUpdate,
-    current_user=Depends(admin_user)
+    current_user=Depends(admin_user),
+    status: OrderStatus = Form(default=OrderStatus.PENDING),
+    
 ):
     order = await order_service.get_order_or_404(db,order_id) 
-    return await order_service.update_order_status(db,order,status_update.status)
-
+    return await order_service.update_order_status(db,order,current_user,status)
 
 @router.get("/{order_id}",response_model = OrderResponse)
 async def get_order(

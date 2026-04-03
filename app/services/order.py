@@ -42,8 +42,8 @@ _VALID_TRANSITIONS : dict[OrderStatus,frozenset[OrderStatus]] = {
     
 
 def _assert_valid_transition(current_status:OrderStatus,new_status:OrderStatus):
-    allowed_status = _VALID_TRANSITIONS[current_status,frzenset()]
-    if new not in allowed_status:
+    allowed_status = _VALID_TRANSITIONS.get(current_status, frozenset())
+    if new_status not in allowed_status:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status transition from {current_status} to {new_status}"
@@ -284,9 +284,10 @@ async def create_order(
 async def update_order_status(
     db:AsyncSession,
     order:Order,
-    order_status:OrderStatus,
-    requester:User
-) ->User:
+    requester:User,
+    order_status:OrderStatus=OrderStatus.DELIVERED,
+    
+) ->Order:
 
     if requester.role == UserRole.CUSTOMER:
         if order.customer_id != requester.id:
@@ -294,16 +295,16 @@ async def update_order_status(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only modify your own orders.",
             )
-        if new_status != OrderStatus.CANCELLED:
+        if order_status != OrderStatus.CANCELLED:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Customers may only cancel orders.",
             )
 
-    _assert_valid_transition(order.status, new_status)
+    _assert_valid_transition(order.status, order_status)
 
     try:
-        order.status = new_status
+        order.status = order_status
         if order.status == OrderStatus.DELIVERED:
             order.payment_status = PaymentStatus.PAID
         await db.commit()
