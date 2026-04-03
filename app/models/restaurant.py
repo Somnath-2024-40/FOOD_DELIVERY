@@ -2,6 +2,7 @@ from sqlalchemy import Column,String,Boolean,Integer,Float,ForeignKey,Text,Enum
 import enum
 from sqlalchemy.orm import relationship
 from db.base import Timestamp
+from sqlalchemy import UniqueConstraint
 
 from db.base import Base
 from models.enums import RestaurantStatus
@@ -33,3 +34,11 @@ class Restaurant(Base, Timestamp):
     owner = relationship("User", back_populates="restaurants")
     menu_items = relationship("MenuItem", back_populates="restaurant", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="restaurant")
+
+    __table_args__ = (
+        UniqueConstraint("name", "address", name="uix_name_address"),
+        UniqueConstraint("phone_number", name="uix_phone_number"),
+        UniqueConstraint("email", name="uix_email"),
+    )
+
+

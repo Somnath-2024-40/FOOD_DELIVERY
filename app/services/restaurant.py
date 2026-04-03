@@ -88,6 +88,35 @@ async def create_restaurant(
     owner:User
 )->Restaurant:
 
+    exist_phone_number = await db.execute(
+        select(Restaurant).where(Restaurant.phone_number == restaurant_in.phone_number)
+    )
+    if exist_phone_number.scalar_one_or_none():
+        raise HTTPException(
+            status_code = http_status.HTTP_400_BAD_REQUEST,
+            detail = "Restaurant with same phone number already exists"
+        )
+    exist_email = await db.execute(
+        select(Restaurant).where(Restaurant.email == restaurant_in.email)
+    )
+    if exist_email.scalar_one_or_none():
+        raise HTTPException(
+            status_code = http_status.HTTP_400_BAD_REQUEST,
+            detail = "Restaurant with same email already exists"
+        )
+
+    query = select(Restaurant).where(
+        func.lower(Restaurant.name) == restaurant_in.name.lower(),
+        func.lower(Restaurant.address) == restaurant_in.address.lower()
+    )
+    exist = await db.execute(query)
+    if exist.scalar_one_or_none():
+        raise HTTPException(
+            status_code = http_status.HTTP_400_BAD_REQUEST,
+            detail = "Restaurant with same name and address already exists"
+        )
+    
+
     upload_dir = "/app/uploads/restaurants"
     os.makedirs(upload_dir, exist_ok=True)
     join_path = os.path.join(upload_dir, image.filename)
@@ -205,6 +234,18 @@ async def create_menu(
 ) ->MenuItem:
 
     _assert_owner_or_admin(restaurant, requester)
+
+    exist = await db.execute(
+        select(MenuItem).where(
+            MenuItem.restaurant_id == restaurant.id,
+            func.lower(MenuItem.name) == item_in.name.lower()
+        )
+    )
+    if exist.scalar_one_or_none():
+        raise HTTPException(
+            status_code = http_status.HTTP_400_BAD_REQUEST,
+            detail = "Menu item already exists"
+        )
 
     upload_dir = "/app/uploads/menu_items"
     os.makedirs(upload_dir, exist_ok=True)
