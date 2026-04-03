@@ -68,7 +68,7 @@ class MenuItemResponse(MenuItemBase):
     id:int
     restaurant_id:int
     created_at:datetime
-    image_url: str
+    image_url: Optional[str] = None
     model_config = {
         "from_attributes":True
     }

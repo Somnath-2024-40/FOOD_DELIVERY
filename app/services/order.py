@@ -1,12 +1,12 @@
 
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status,Header
 from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import uuid
 from typing import Tuple,Optional,List
-from sqlalchemy import func
+from sqlalchemy import func,ForeignKey
 from sqlalchemy.orm import selectinload
 
 from models.order import OrderItem,Order,PaymentMethod,PaymentStatus,OrderStatus
@@ -15,6 +15,9 @@ from models.restaurant import Restaurant,RestaurantStatus
 from models.user import User,UserRole
 from schemas.order import OrderCreate, OrderStatusUpdate
 from core.dependencies import DB
+from models.Idempotency import IdempotencyKey
+
+
 
 
 MAX_PAGE_SIZE = 50
@@ -24,10 +27,8 @@ def _generate_order_number(session:AsyncSession) ->str:
     return "ORD-" + uuid.uuid4().hex[:8].upper()
 
 def _to_decimal(value:float | Decimal,places:int=2):
-    quantizer = 10 ** places
-    return Decimal(value * quantizer).quantize(Decimal(1), rounding=ROUND_HALF_UP)
-
-
+    quantizer = Decimal(10) ** -places  # example ---------->  Decimal('0.01') for 2 places ....yo bebe
+    return Decimal(str(value)).quantize(quantizer, rounding=ROUND_HALF_UP)
 
 _VALID_TRANSITIONS : dict[OrderStatus,frozenset[OrderStatus]] = {
     OrderStatus.PENDING : frozenset({OrderStatus.CONFIRMED,OrderStatus.CANCELLED}),
@@ -125,28 +126,65 @@ async def _count(db:AsyncSession,base_query):
 
 # create and update operations
 
+async def _get_order_with_items(db: AsyncSession, order_id: int) -> Order:
+    result = await db.execute(
+        select(Order)
+        .options(selectinload(Order.items))
+        .where(Order.id == order_id)
+    )
+    return result.scalar_one_or_none()
+
 async def create_order(
     db:AsyncSession,
     order_in:OrderCreate,
-    customer:User
+    customer:User,
+    x_idempotency_key:Optional[str] = None
+
 )->Order:
+
+    if not x_idempotency_key:
+        raise HTTPException(
+            status_code  = status.HTTP_400_BAD_REQUEST,
+            detail = "Idempotency key header is required"
+        )
+
+    existing_key = await db.execute(
+        select(IdempotencyKey).where(IdempotencyKey.key == x_idempotency_key)
+
+    )
+
+    existing_key_record = existing_key.scalar_one_or_none()
+
+    if existing_key_record:
+        order = await _get_order_with_items(db, existing_key_record.order_id)
+        if order is None:
+            raise HTTPException(
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail = "Inconsistent state: Idempotency key exists without associated order"
+            )
+        return order
+
+
     
+
+
+
 
     restaurant_result = await db.execute(
         select(Restaurant).where(Restaurant.id == order_in.restaurant_id,Restaurant.status == RestaurantStatus.OPEN,Restaurant.is_active.is_(True))
     )
     restaurant =restaurant_result.scalar_one_or_none()
     if restaurant is None:
-        raise HTTPException(
+        raise HTTPException( 
             status_code = status.HTTP_400_BAD_REQUEST,
             detail = "restaurant not found"
         )
 
-    if restaurant.status != RestaurantStatus.OPEN:
-        raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
-            detail = "Restaurant currently not able to take orders"
-        )
+    # if restaurant.status != RestaurantStatus.OPEN:
+    #     raise HTTPException(
+    #         status_code = status.HTTP_400_BAD_REQUEST,
+    #         detail = "Restaurant currently not able to take orders"
+    #     )
 
     if not order_in.items:
         raise HTTPException(
@@ -211,7 +249,7 @@ async def create_order(
     total_amount = _to_decimal(subtotal + delivery_fee)
 
     order = Order(
-        order_number = _generate_order_number(AsyncSession), 
+        order_number = _generate_order_number(db), 
         subtotal = subtotal,
         delivery_fee = delivery_fee,
         discount = Decimal("0.0"),
@@ -226,12 +264,20 @@ async def create_order(
     )
 
     try:
+
         db.add(order)
+        await db.flush()
+        idempotency_record = IdempotencyKey(
+            key=x_idempotency_key,
+            order_id=order.id
+        )
+        db.add(idempotency_record)
         await db.commit()
-        await db.refresh(order)
+        order = await _get_order_with_items(db, order.id)
     except Exception:
         await db.rollback()
         raise
+
     return order
 
 

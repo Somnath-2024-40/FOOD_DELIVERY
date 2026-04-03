@@ -1,6 +1,6 @@
 from typing import Annotated,Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status,Header
 
 from core.dependencies import DB, get_current_active_user, admin_user 
 from models.user import User
@@ -23,9 +23,12 @@ router = APIRouter()
 async def create_order(
     order_in:OrderCreate,
     db:DB,
-    current_user=Depends(get_current_active_user)
+    key: str = Header(..., alias="x-idempotency-key"),
+    current_user=Depends(get_current_active_user),
+    
+
 ):
-    return await order_service.create_order(db,order_in,current_user)
+    return await order_service.create_order(db,order_in,current_user,key)
 
 @router.get("/my",response_model = PaginateResponse[OrderSummary])
 async def get_my_orders(
@@ -34,7 +37,7 @@ async def get_my_orders(
     current_user=Depends(get_current_active_user),
     
 ):
-    orders,total = await order_service.list_order_for_customers(db,current_user.id,**pagination.to_dict())
+    orders,total = await order_service.List_order_for_customers(db,current_user.id,**pagination.to_dict())
     return make_paginated_response(orders,total,pagination)
 
 @router.get("/restaurant/{restaurant_id}",response_model = PaginateResponse[OrderSummary])
