@@ -1,9 +1,10 @@
-from __future__ import annotations
 
 from typing import Annotated
 
 from fastapi import APIRouter, status,UploadFile, Form, Depends,File
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from core.dependencies import DB, get_restaurant_owner 
 from models.enums import MenuCategory 
@@ -32,25 +33,31 @@ async def list_menu_items(
     response_model=MenuItemResponse,
     status_code=status.HTTP_201_CREATED
 )
+@router.post("/restaurant/{restaurant_id}/menu/items",
+    response_model=MenuItemResponse,
+    status_code=status.HTTP_201_CREATED
+)
 async def create_menu_item(
     restaurant_id: int,
+    db: DB,
 
-
-    image: Annotated[UploadFile, File(...)],
     
-    db: Annotated[DB, Depends()],
-    current_user: Annotated[User, Depends(get_restaurant_owner)],
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    category: MenuCategory = Form(default=MenuCategory.OTHER),
+    is_available: bool = Form(default=True),
+    is_vegetarian: bool = Form(default=False),
+    is_vegan: bool = Form(default=False),
+    calories: Optional[int] = Form(default=None),
+    preparation_time: Optional[int] = Form(default=None),
 
-    name: Annotated[str, Form(...)],
-    description: Annotated[str, Form(...)],
-    price: Annotated[float, Form(...)],
-    category: Annotated[MenuCategory, Form()]=MenuCategory.OTHER,
-    is_available: Annotated[bool, Form()]=True,
-    is_vegetarian: Annotated[bool, Form()]=False,
-    is_vegan: Annotated[bool, Form()]=False,
-    calories: Annotated[Optional[int], Form()]=None,
-    preparation_time: Annotated[Optional[int], Form()]=None,
+    
+    image: UploadFile = File(...),
 
+   
+    
+    current_user: User = Depends(get_restaurant_owner),
 ):
     item_in = MenuItemCreate(
         name=name,

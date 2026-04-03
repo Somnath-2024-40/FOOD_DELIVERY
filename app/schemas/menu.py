@@ -20,30 +20,30 @@ class MenuItemBase(BaseModel):
     calories: Optional[int] = None
     preparation_time: Optional[int] = None
 
-    @classmethod
-    def as_form(
-        cls,
-        name: str = Form(...),
-        description: str = Form(...),
-        price: float = Form(...),
-        category: MenuCategory = Form(MenuCategory.OTHER),
-        is_available: bool = Form(True),
-        is_vegetarian: bool = Form(False),
-        is_vegan: bool = Form(False),
-        calories: Optional[int] = Form(None),
-        preparation_time: Optional[int] = Form(None),
-    ):
-        return cls(
-            name=name,
-            description=description,
-            price=price,
-            category=category,
-            is_available=is_available,
-            is_vegetarian=is_vegetarian,
-            is_vegan=is_vegan,
-            calories=calories,
-            preparation_time=preparation_time
-        )
+    # @classmethod
+    # def as_form(
+    #     cls,
+    #     name: str = Form(...),
+    #     description: str = Form(...),
+    #     price: float = Form(...),
+    #     category: MenuCategory = Form(MenuCategory.OTHER),
+    #     is_available: bool = Form(True),
+    #     is_vegetarian: bool = Form(False),
+    #     is_vegan: bool = Form(False),
+    #     calories: Optional[int] = Form(None),
+    #     preparation_time: Optional[int] = Form(None),
+    # ):
+    #     return cls(
+    #         name=name,
+    #         description=description,
+    #         price=price,
+    #         category=category,
+    #         is_available=is_available,
+    #         is_vegetarian=is_vegetarian,
+    #         is_vegan=is_vegan,
+    #         calories=calories,
+    #         preparation_time=preparation_time
+    #     )
 
 
 class MenuItemCreate(MenuItemBase):

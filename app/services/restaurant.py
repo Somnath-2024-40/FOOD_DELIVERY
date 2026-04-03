@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 
 from sqlalchemy import func , select
 from typing import Optional,Tuple,List
@@ -11,11 +11,13 @@ import shutil
 from fastapi import UploadFile
 
 from models.restaurant import Restaurant,RestaurantStatus
+
 from models.menu import MenuItem,MenuCategory
 from models.enums import UserRole
 from models.user import User
 from schemas.restaurant import RestaurantCreate,RestaurantUpdate
-from schemas.menu import MenuItemCreate
+from schemas.menu import MenuItemCreate,MenuItemUpdate
+
 
 MAX_PAGE_SIZE = 100
 
@@ -170,7 +172,7 @@ async def get_menu_item_or_404(
 
 
 async def list_menu(
-    db:ASyncSession,
+    db:AsyncSession,
     restaurant_id:int,
     page:int = 1,
     page_size:int = 10,
@@ -223,7 +225,7 @@ async def create_menu(
             shutil.copyfileobj(image.file, f)
 
         menu_item = MenuItem(
-            **item_in.model_dump(),
+            **item_in.model_dump(exclude={"image_url"}),
             restaurant_id=restaurant.id,
             image_url=image_url
         )
@@ -250,7 +252,7 @@ async def update_menu(
     db:AsyncSession,
     requester:User,
     restaurant:Restaurant,
-    menu_item:MenuItem,
+    
     menu_item_in:MenuItemUpdate
 ) -> MenuItem:
 
@@ -271,7 +273,7 @@ async def update_menu(
 async def delete_menu(
     db:AsyncSession,
     requester:User,
-    item:ItemMenu
+    item:MenuItem,
 ) ->None:
 
     _assert_owner_or_admin(Restaurant,requester)
