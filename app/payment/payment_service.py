@@ -18,6 +18,55 @@ from payment.payment_schema import PaymentCreate, PaymentResponse
 logger = logging.getLogger(__name__)
 
 
+MAX_RETRY_ATTEMPTS = 3
+BASE_RETRY_DELAY = 5
+
+# we will rreplace this with a real payment gateway
+async def _fake_payment_gateway(payment_method: PaymentMethod, amount: Decimal) -> None:
+    return True
+
+
+async def _payemnt_retry(payment:Payment, amount: Decimal) -> None:
+    payment.status = PaymentStatus.PROCESSING
+    await db.commit()
+
+    last_error = None
+
+    for atempt in range(1,MAX_RETRY_ATTEMPTS):
+        try:
+            logger.info(f"Attempt {atempt} to process payment {payment.id}")
+
+            success = await _fake_payment_gateway(payment.payment_method, amount)
+
+            if success:
+                payment.status = PaymentStatus.SUCCESS
+
+                await db.commit()
+                logger.info(f"Payment {payment.id} processed successfully")
+                return True
+        except Exception as e:
+            last_error = e
+            logger.warning(f"Failed to process payment {payment.id}: {e}")
+
+            if attempt < MAX_RETRY_ATTEMPTS:
+                backoff = BASE_RETRY_DELAY * (2 ** (attempt - 1)) 
+                logger.info(f"backing off for {backoff} seconds")
+                await asyncio.sleep(backoff)
+
+    payment.status = PaymentStatus.FAILED
+    await db.commit()
+
+    raise last_error
+    return False
+
+
+
+
+
+    
+
+
+
 async def _idempotency_key_exists(
     db: AsyncSession,
     key: str,
@@ -26,7 +75,7 @@ async def _idempotency_key_exists(
 ) -> bool:
 
     exist = await db.execute(
-        select(Payment).where(
+        select(IdempotencyKey).where(
             IdempotencyKey.key == key,
             IdempotencyKey.entity_type == entity_type
         )
@@ -74,7 +123,7 @@ async def create_payment(
         if payment:
             return PaymentResponse.model_validate(payment)  #return same payment 
 
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment already done")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Duplicate request but no payment found")
 
     order = await _get_order_with_payment(db, payment_in.order_id)
     if not order:
@@ -87,14 +136,16 @@ async def create_payment(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment only done after delivery")
 
     if order.payment:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment already done")
+        p = order.payment
+        if p.status in (PaymentStatus.PENDING, PaymentStatus.PAID, PaymentStatus.PROCESSING):
+            return PaymentResponse.model_validate(p) # if FAILED  then create new attempt
 
     payment = Payment(
         customer_id=payment_in.customer_id,
         order_id=payment_in.order_id,
         amount=payment_in.amount,
         payment_method=payment_in.payment_method,
-        status=PaymentStatus.PAID,
+        status=PaymentStatus.PENDING,
         upi_ref=payment_in.upi_ref,
         notes=payment_in.notes
     )
@@ -102,15 +153,23 @@ async def create_payment(
     try:
         db.add(payment)
         await db.flush()
-        order.payment_status = PaymentStatus.PAID
         await db.commit()
         await db.refresh(payment)
     except Exception as e:
         await db.rollback()
-        logger.error(e) 
-        raise
+        logger.error(f"Failed to save payment {payment.id}: {e}")  
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save payment")
+    
+    success = await _payemnt_retry(payment, payment_in.amount)
 
-    return payment
+    if not success:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to process payment")
+
+    order.payment_status = PaymentStatus.PAID
+    await db.commit()
+    await db.refresh(payment)
+
+    return PaymentResponse.model_validate(payment)
 
 
 async def get_payment_by_payment_id(

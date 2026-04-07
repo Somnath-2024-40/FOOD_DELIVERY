@@ -5,6 +5,7 @@ import enum
 class PaymentStatus(str, enum.Enum):
     PENDING = "pending"
     PAID = "paid"
+    PROCESSING = "processing"
     FAILED = "failed"
     REFUNDED = "refunded"
 
@@ -13,11 +14,7 @@ class PaymentMethod(str, enum.Enum):
     UPI = "upi"
     BANK_TRANSFER = "bank_transfer"
 
-class PaymentStatus(str, enum.Enum):
-    PENDING = "pending"
-    PAID = "paid"
-    FAILED = "failed"
-    REFUNDED = "refunded"
+
 
 
     
