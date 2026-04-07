@@ -11,6 +11,7 @@ class IdempotencyKey(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String(255), unique=True, nullable=False)
     order_id = Column(Integer,ForeignKey("orders.id"), nullable=True)  
+    entity_type = Column(String(20), nullable=False,default="order")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 

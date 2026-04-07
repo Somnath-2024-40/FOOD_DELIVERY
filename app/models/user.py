@@ -24,3 +24,4 @@ class User(Base,Timestamp):
     restaurants = relationship("Restaurant", back_populates="owner")
     orders = relationship("Order", foreign_keys="[Order.customer_id]", back_populates="customer")
     delivered_orders = relationship("Order", foreign_keys="[Order.delivery_agent_id]", back_populates="delivery_agent")
+    payments = relationship("Payment", back_populates="customer")

@@ -25,18 +25,10 @@ class OrderStatus(str, enum.Enum):
     CANCELLED = "cancelled"
 
 
-class PaymentStatus(str, enum.Enum):
-    PENDING = "pending"
-    PAID = "paid"
-    FAILED = "failed"
-    REFUNDED = "refunded"
 
 
-class PaymentMethod(str, enum.Enum):
-    CASH = "cash"
-    CARD = "card"
-    ONLINE = "online"
-    WALLET = "wallet"
+
+
 
 class MenuCategory(str, enum.Enum):
     APPETIZER = "appetizer"

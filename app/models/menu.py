@@ -29,3 +29,4 @@ class MenuItem(Base, Timestamp):
 
     restaurant = relationship("Restaurant", back_populates="menu_items")
     order_items = relationship("OrderItem", back_populates="menu_item")
+    

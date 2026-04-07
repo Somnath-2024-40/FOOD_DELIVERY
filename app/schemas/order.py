@@ -28,7 +28,7 @@ class OrderCreate(BaseModel):
     restaurant_id:int
     delivery_address:str
     items:List[orderItemCreate]
-    payment_method:PaymentMethod = PaymentMethod.CASH
+    payment_method:PaymentMethod = PaymentMethod.PAY_ON_DELIVERY
     special_request:Optional[str]=None
 
 class OrderStatusUpdate(BaseModel):

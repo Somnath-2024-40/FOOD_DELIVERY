@@ -4,7 +4,8 @@ from sqlalchemy.orm import relationship
 import enum
 
 from db.base import Base, Timestamp
-from models.enums import OrderStatus, PaymentStatus, PaymentMethod
+from models.enums import OrderStatus
+from payment.payment_enum import PaymentStatus, PaymentMethod
 
 
 
@@ -21,7 +22,7 @@ class Order(Base, Timestamp):
     total_amount = Column(Numeric(10, 2), nullable=False)
 
     payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
-    payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.CASH)
+    payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.PAY_ON_DELIVERY)
 
     delivery_address = Column(Text, nullable=False)
     special_request = Column(Text, nullable=True) 
@@ -35,6 +36,7 @@ class Order(Base, Timestamp):
     restaurant = relationship("Restaurant", back_populates="orders")
     delivery_agent = relationship("User", back_populates="delivered_orders", foreign_keys=[delivery_agent_id])
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    payment = relationship("Payment", back_populates="order", uselist=False)
 
 
 class OrderItem(Base, Timestamp):
@@ -51,3 +53,4 @@ class OrderItem(Base, Timestamp):
 
     order = relationship("Order", back_populates="items")
     menu_item = relationship("MenuItem", back_populates="order_items")
+    
