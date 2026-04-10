@@ -13,6 +13,7 @@ from models.enums import UserRole, OrderStatus
 from payment.payment_model import Payment
 from payment.payment_enum import PaymentStatus, PaymentMethod
 from payment.payment_schema import PaymentCreate, PaymentResponse
+from core.redis import get_redis
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ async def _fake_payment_gateway(payment_method: PaymentMethod, amount: Decimal) 
     return True
 
 
-async def _payemnt_retry(payment:Payment, amount: Decimal) -> None:
+async def _payemnt_retry(db:AsyncSession, payment:Payment, amount: Decimal) -> None:
     payment.status = PaymentStatus.PROCESSING
     await db.commit()
 
@@ -36,7 +37,7 @@ async def _payemnt_retry(payment:Payment, amount: Decimal) -> None:
         try:
             logger.info(f"Attempt {atempt} to process payment {payment.id}")
 
-            success = await _fake_payment_gateway(payment.payment_method, amount)
+            success = await _fake_payment_gateway(db,payment.payment_method, amount)
 
             if success:
                 payment.status = PaymentStatus.SUCCESS
@@ -74,6 +75,13 @@ async def _idempotency_key_exists(
     entity_type: str = "payment"
 ) -> bool:
 
+# here we check redis first
+    redis = await get_redis()
+    redis_key = f"idempotency_key:{key}"
+    if await redis.get(redis_key):
+        return True #true mean duplicate
+
+
     exist = await db.execute(
         select(IdempotencyKey).where(
             IdempotencyKey.key == key,
@@ -81,8 +89,12 @@ async def _idempotency_key_exists(
         )
     )
 
+
+
     if exist.scalar_one_or_none():
-        return True #true mean duolicate
+        await redis.set(redis_key, "1", ex=60*60*24) 
+
+        return True
 
     idem = IdempotencyKey(
         key=key,
@@ -92,6 +104,7 @@ async def _idempotency_key_exists(
 
     db.add(idem)
     await db.commit()
+    await redis.set(redis_key, "1", ex=60*60*24)
 
     return False  #this is for fresh key
 

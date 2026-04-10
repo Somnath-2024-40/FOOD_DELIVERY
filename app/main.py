@@ -11,7 +11,8 @@ from db.base import Base
 from db.session import engine, sessionlocal
 from models.user import UserRole                             
 from schemas.user import UserCreate                          
-from services.user import _get_user_by_email, create_user    
+from services.user import _get_user_by_email, create_user   
+from core.redis import init_redis, close_redis, get_redis 
 
 
 # ── Startup helpers ───────────────────────────────────────────────────────────
@@ -20,21 +21,6 @@ async def create_db_and_tables() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-
-# async def create_first_superuser() -> None:
-#     async with sessionlocal() as db:                          
-#         existing = await _get_user_by_email(db, settings.FIRST_SUPERUSER_EMAIL)
-#         if not existing:
-#             await create_user(                                 
-#                 db,
-#                 UserCreate(
-#                     email=settings.FIRST_SUPERUSER_EMAIL.strip(),
-#                     password=settings.FIRST_SUPERUSER_PASSWORD.strip(),
-#                     full_name="System Admin",
-#                     role=UserRole.ADMIN,
-#                 ),
-#             )
-#             print("First superuser created.")
 
 
 async def create_first_superuser() -> None:
@@ -64,20 +50,24 @@ async def create_first_superuser() -> None:
                 print(f"Superuser {email} role corrected to ADMIN.")
 
 
-# ── Lifespan ──────────────────────────────────────────────────────────────────
+# Lifespan 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
     await create_first_superuser()
+    await init_redis() #we initialize redis
+
     yield
 
+    await close_redis() #close redis
 
-# ── App ───────────────────────────────────────────────────────────────────────
+
+#  App
 
 app= FastAPI(
     lifespan=lifespan,
-    title=settings.PROJECT_NAME,                                # ✅ correct attribute name
+    title=settings.PROJECT_NAME,                                
     version="1.0.0",
     description="A restaurant management system API built with FastAPI and SQLAlchemy.",
 )

@@ -148,20 +148,29 @@ async def create_order(
             detail = "Idempotency key header is required"
         )
 
+
+
+    redis = await get_redis()
+    redis_key = f"order_idempotency:order:{x_idempotency_key}"
+    cached_order_id = await redis.get(redis_key)
+
+    if cached_order_id:
+        order = await _get_order_with_items(db, int(cached_order_id))
+        if order is None:
+            return order
+
+
     existing_key = await db.execute(
         select(IdempotencyKey).where(IdempotencyKey.key == x_idempotency_key)
-
     )
 
     existing_key_record = existing_key.scalar_one_or_none()
 
     if existing_key_record:
         order = await _get_order_with_items(db, existing_key_record.order_id)
-        if order is None:
-            raise HTTPException(
-                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail = "Inconsistent state: Idempotency key exists without associated order"
-            )
+        if order :
+            # here we repopulate redis so next request will be fast
+            await redis.set(redis_key,str(order.id),ex=60*60*24)
         return order
 
 
@@ -201,6 +210,7 @@ async def create_order(
             MenuItem.is_available.is_(True),
             MenuItem.restaurant_id == restaurant.id
         )
+        .with_for_update() 
     )
     menu_items = {item.id: item for item in menu_result.scalars().all()}
 
@@ -274,6 +284,7 @@ async def create_order(
         db.add(idempotency_record)
         await db.commit()
         order = await _get_order_with_items(db, order.id)
+        await redis.set(redis_key,str(order.id),ex=60*60*24)  # this is 24 hour ttl
     except Exception:
         await db.rollback()
         raise

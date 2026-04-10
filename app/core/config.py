@@ -16,7 +16,9 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
     FIRST_SUPERUSER_EMAIL: str
 
-    BACKEND_CORS_ORIGINS: list[str]= ["http://localhost:3000", "http://localhost:8080"]
+    BACKEND_CORS_ORIGINS: list[str]= ["http://localhost:5173", "http://localhost:8080"]
+
+    REDIS_URL: str
 
 
     model_config = SettingsConfigDict(

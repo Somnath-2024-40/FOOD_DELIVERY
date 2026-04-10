@@ -16,9 +16,11 @@ from models.enums import UserRole
 from models.user import User
 from schemas.restaurant import RestaurantCreate,RestaurantUpdate
 from schemas.menu import MenuItemCreate,MenuItemUpdate
+from core.redis import get_redis
 
 
 MAX_PAGE_SIZE = 100
+CACHE_TTL=60*5 # Time to live is 5 minutes
 
 # ____helpers_____
 
@@ -67,6 +69,15 @@ async def list_restaurant(
     restaurant_status:Optional[RestaurantStatus] = None
 )->Tuple[List[Restaurant],int]:
 
+# redis cache
+    cache_key = f"restaurants:{page}:{page_size}:{cuisine_type}:{restaurant_status}"
+    redis = await get_redis()
+
+    cached = await redis.get(cache_key)
+    if cached:
+        data = json.loads(cached)
+        retuern data["items"],data["total"]
+
     page_size = _clamp_page_size(page_size)
 
     base = select(Restaurant).where(Restaurant.is_active.is_(True))
@@ -78,7 +89,17 @@ async def list_restaurant(
     
     total = await _count(db,base)
     result = await db.execute(base.offset((page-1)*page_size).limit(page_size))
-    return result.scalars().all(),total
+    restaurant = result.scalars().all(),total
+
+    payload = {
+        "items":r.__dict__ for r in restaurant,
+        "total":total
+    }
+
+    if item in payload["items"]:
+        item.pop("_sa_instance_state",None)
+    await redis.set(cache_key,json.dumps(payload),ex=CACHE_TTL)
+    return restaurant,total
 
 async def create_restaurant(
     db:AsyncSession,
@@ -132,6 +153,10 @@ async def create_restaurant(
     except Exception:
         await db.rollback()
         raise
+
+    redis = await get_redis()
+    async for key in redis.scan_iter("restaurants:list:*"):
+        await redis.delete(key)
     return restaurant
 
 async def update_restaurant(
@@ -208,6 +233,17 @@ async def list_menu(
     
 ) -> Tuple[List[MenuItem],int]:
 
+
+    cache_key = f"menu_items:{restaurant_id}:{only_available}:{page}:{page_size}"
+    redis=await get_redis()
+
+    cached = await redis.get(cache_key)
+
+    if cached:
+        data = json.loads(cached)
+        return data["items"],data["total"]
+    
+
     page_size = _clamp_page_size(page_size)
 
     base = select(MenuItem).where(MenuItem.restaurant_id == restaurant_id)
@@ -217,7 +253,19 @@ async def list_menu(
     
     total = await _count(db,base)
     result = await db.execute(base.offset((page-1)*page_size).limit(page_size))
-    return result.scalars().all(),total
+    items = result.scalars().all(),total
+
+    payload = {
+        "items":items,
+        "total":total
+    }
+
+    for item in payload["items"]:
+        item.pop("_sa_instance_state",None)
+    
+    await redis.set(cache_key,json.dumps(payload,default=str),ex=CACHE_TTL)
+
+    return items,total
 
 
 
@@ -281,6 +329,10 @@ async def create_menu(
             os.remove(join_path)
 
         raise
+
+    redis = await get_redis()
+    async for key in redis.scan_iter(f"menu_items:{restaurant.id}:*"):
+        await redis.delete(key)
 
     return menu_item
 
