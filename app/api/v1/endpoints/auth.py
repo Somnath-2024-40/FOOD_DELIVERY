@@ -7,6 +7,7 @@ from typing import Annotated,Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from background_tasks import BackgroundTasks
 
 from core.dependencies import DB, get_current_active_user  
 from core.security import create_access_token, create_refresh_token, decode_token
@@ -14,6 +15,8 @@ from models.user import User
 from schemas.auth import RefreshTokenRequest, Token
 from schemas.user import UserCreate, UserResponse            
 import services.user as user_service
+
+from email.email_service import welcome_email
 
 
 
@@ -56,11 +59,13 @@ async def _resolve_active_user(
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user_in:UserCreate,
-    db:DB
+    db:DB,
+    background_tasks:BackgroundTasks
 
 ):
-    return await user_service.create_user(db,user_in)
-
+    user = await user_service.create_user(db,user_in)
+    background_tasks.add_task(welcome_email,user.email,user.full_name)
+    return user
 @router.post("/login", response_model=Token)
 async def Login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],

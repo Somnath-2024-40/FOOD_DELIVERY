@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status, APIRouter, Depends, Form,Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
+from background_tasks import BackgroundTasks
 
 from core.dependencies import DB
 import payment.payment_service as payment_service         
@@ -9,6 +10,7 @@ from payment.payment_schema import PaymentCreate, PaymentResponse
 from payment.payment_enum import PaymentMethod
 from core.dependencies import get_current_active_user
 from models.user import User
+from email.email_service import send_payment_success_email,send_payment_failed_email,verify_and_finalize_payment
 
 
 router = APIRouter()
@@ -17,6 +19,7 @@ router = APIRouter()
 @router.post("/payments/", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
 async def process_payment(
     db: DB,
+    background_tasks: BackgroundTasks,
     order_id: int = Form(...),
     amount: float = Form(...),
     payment_method: PaymentMethod = Form(default=PaymentMethod.PAY_ON_DELIVERY),
@@ -37,7 +40,17 @@ async def process_payment(
         customer_id=current_user.id, 
     )
 
-    return await create_payment(db, payment_info, current_user,key)  
+
+
+    p= await create_payment(db, payment_info, current_user,key)  
+    background_tasks.add_task(
+        verify_and_finalize_payment,
+        order_id:order_id,
+        payment_id:payment_id,
+        amount:amount,
+        payment_method:payment_method
+    )
+    return p
 
 
 @router.get("/payments/{payment_id}", response_model=PaymentResponse)

@@ -1,7 +1,7 @@
 from typing import Annotated,Any
 from fastapi import APIRouter, Depends, status, Form
 from fastapi import Header
-
+from background_tasks import BackgroundTasks
 from fastapi import APIRouter, Depends, status,Header
 
 from core.dependencies import DB, get_current_active_user, admin_user 
@@ -16,6 +16,7 @@ from schemas.order import (
 )
 from models.enums import OrderStatus
 import services.order as order_service 
+from email.email_service import order_conformation_email,task_order_status_email
 
 
 
@@ -28,10 +29,20 @@ async def create_order(
     db:DB,
     key: str = Header(..., alias="x-idempotency-key"),
     current_user=Depends(get_current_active_user),
+    background_tasks: BackgroundTasks 
     
 
 ):
-    return await order_service.create_order(db,order_in,current_user,key)
+    order = await order_service.create_order(db,order_in,current_user,key)
+    bacground_tasks.add_task(
+        order_conformation_email,
+            email=current_user.email,
+            full_name=current_user.full_name,
+            order_number=order.order_number,
+            total_amount=float(order.total_amount),
+            estimated_delivery_time=order.estimated_delivery_time or 30,
+        )
+        return order
 
 @router.get("/my",response_model = PaginateResponse[OrderSummary])
 async def get_my_orders(
@@ -71,6 +82,7 @@ async def update_order_status(
     order_id:int,
     current_user=Depends(admin_user),
     status: OrderStatus = Form(default=OrderStatus.PENDING),
+    # background_tasks: BackgroundTasks 
     
 ):
     order = await order_service.get_order_or_404(db,order_id) 

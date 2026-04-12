@@ -13,6 +13,8 @@ from models.user import UserRole
 from schemas.user import UserCreate                          
 from services.user import _get_user_by_email, create_user   
 from core.redis import init_redis, close_redis, get_redis 
+from email.email_service import task_cleanup_stuck_orders
+
 
 
 # ── Startup helpers ───────────────────────────────────────────────────────────
@@ -58,7 +60,20 @@ async def lifespan(app: FastAPI):
     await create_first_superuser()
     await init_redis() #we initialize redis
 
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        task_cleanup_stuck_orders,
+        trigger="interval",
+        minutes=10,
+        id="cleanup_stuck_orders",
+        replace_existing=True,
+        replace_existing = True
+    )
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown()
 
     await close_redis() #close redis
 
