@@ -9,6 +9,7 @@ import os
 import uuid
 import shutil
 from fastapi import UploadFile
+import json
 
 from models.restaurant import Restaurant,RestaurantStatus
 from models.menu import MenuItem,MenuCategory
@@ -76,7 +77,7 @@ async def list_restaurant(
     cached = await redis.get(cache_key)
     if cached:
         data = json.loads(cached)
-        retuern data["items"],data["total"]
+        return data["items"],data["total"]
 
     page_size = _clamp_page_size(page_size)
 
@@ -89,16 +90,16 @@ async def list_restaurant(
     
     total = await _count(db,base)
     result = await db.execute(base.offset((page-1)*page_size).limit(page_size))
-    restaurant = result.scalars().all(),total
+    restaurant = result.scalars().all()
 
     payload = {
-        "items":r.__dict__ for r in restaurant,
+        "items":[r.__dict__ for r in restaurant],
         "total":total
     }
 
-    if item in payload["items"]:
+    for item in payload["items"]:
         item.pop("_sa_instance_state",None)
-    await redis.set(cache_key,json.dumps(payload),ex=CACHE_TTL)
+    await redis.set(cache_key,json.dumps(payload,default=str),ex=CACHE_TTL)
     return restaurant,total
 
 async def create_restaurant(
@@ -225,49 +226,50 @@ async def get_menu_item_or_404(
 
 
 async def list_menu(
-    db:AsyncSession,
-    restaurant_id:int,
-    page:int = 1,
-    page_size:int = 10,
-    only_available:bool = False,
-    
-) -> Tuple[List[MenuItem],int]:
-
+    db: AsyncSession,
+    restaurant_id: int,
+    page: int = 1,
+    page_size: int = 10,
+    only_available: bool = False,
+) -> Tuple[List[dict], int]: # Changed return type hint to dict for cached consistency
 
     cache_key = f"menu_items:{restaurant_id}:{only_available}:{page}:{page_size}"
-    redis=await get_redis()
+    redis = await get_redis()
 
     cached = await redis.get(cache_key)
-
     if cached:
         data = json.loads(cached)
-        return data["items"],data["total"]
-    
+        return data["items"], data["total"]
 
     page_size = _clamp_page_size(page_size)
 
     base = select(MenuItem).where(MenuItem.restaurant_id == restaurant_id)
-
     if only_available:
         base = base.where(MenuItem.is_available.is_(True))
     
-    total = await _count(db,base)
+    total = await _count(db, base)
     result = await db.execute(base.offset((page-1)*page_size).limit(page_size))
-    items = result.scalars().all(),total
+    items_objects = result.scalars().all()
 
+    # 1. Convert SQLAlchemy objects to plain Dictionaries
+    # This replaces the broken .pop() logic
+    items_as_dicts = []
+    for item in items_objects:
+        # vars(item) gets the data, we copy it to avoid modifying the living object
+        d = dict(item.__dict__)
+        d.pop("_sa_instance_state", None)
+        items_as_dicts.append(d)
+
+    # 2. Prepare payload for Redis
     payload = {
-        "items":items,
-        "total":total
+        "items": items_as_dicts,
+        "total": total
     }
 
-    for item in payload["items"]:
-        item.pop("_sa_instance_state",None)
-    
-    await redis.set(cache_key,json.dumps(payload,default=str),ex=CACHE_TTL)
+    # 3. Store in Redis
+    await redis.set(cache_key, json.dumps(payload, default=str), ex=CACHE_TTL)
 
-    return items,total
-
-
+    return items_as_dicts, total
 
 async def create_menu(
     db:AsyncSession,

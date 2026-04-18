@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from api.v1.api import api_router
 from core.config import settings
@@ -13,7 +14,7 @@ from models.user import UserRole
 from schemas.user import UserCreate                          
 from services.user import _get_user_by_email, create_user   
 from core.redis import init_redis, close_redis, get_redis 
-from email.email_service import task_cleanup_stuck_orders
+from background.email_service import task_cleanup_stuck_orders
 
 
 
@@ -67,7 +68,7 @@ async def lifespan(app: FastAPI):
         minutes=10,
         id="cleanup_stuck_orders",
         replace_existing=True,
-        replace_existing = True
+        
     )
     scheduler.start()
 

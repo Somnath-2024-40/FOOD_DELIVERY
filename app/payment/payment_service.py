@@ -27,44 +27,38 @@ async def _fake_payment_gateway(payment_method: PaymentMethod, amount: Decimal) 
     return True
 
 
-async def _payemnt_retry(db:AsyncSession, payment:Payment, amount: Decimal) -> None:
+async def _payemnt_retry(db: AsyncSession, payment: Payment, amount: Decimal) -> bool:
     payment.status = PaymentStatus.PROCESSING
     await db.commit()
 
     last_error = None
 
-    for atempt in range(1,MAX_RETRY_ATTEMPTS):
+    for attempt in range(1, MAX_RETRY_ATTEMPTS + 1): 
         try:
-            logger.info(f"Attempt {atempt} to process payment {payment.id}")
+            logger.info(f"Attempt {attempt} to process payment {payment.id}")
 
-            success = await _fake_payment_gateway(db,payment.payment_method, amount)
+            success = await _fake_payment_gateway(db, payment.payment_method, amount)
 
             if success:
                 payment.status = PaymentStatus.SUCCESS
-
                 await db.commit()
                 logger.info(f"Payment {payment.id} processed successfully")
                 return True
+
         except Exception as e:
             last_error = e
             logger.warning(f"Failed to process payment {payment.id}: {e}")
 
             if attempt < MAX_RETRY_ATTEMPTS:
-                backoff = BASE_RETRY_DELAY * (2 ** (attempt - 1)) 
-                logger.info(f"backing off for {backoff} seconds")
+                backoff = BASE_RETRY_DELAY * (2 ** (attempt - 1))
+                logger.info(f"Backing off for {backoff} seconds")
                 await asyncio.sleep(backoff)
 
     payment.status = PaymentStatus.FAILED
     await db.commit()
 
-    raise last_error
-    return False
+    raise last_error  
 
-
-
-
-
-    
 
 
 

@@ -1,7 +1,7 @@
 from typing import Annotated,Any
 from fastapi import APIRouter, Depends, status, Form
 from fastapi import Header
-from background_tasks import BackgroundTasks
+from fastapi import BackgroundTasks
 from fastapi import APIRouter, Depends, status,Header
 
 from core.dependencies import DB, get_current_active_user, admin_user 
@@ -16,7 +16,7 @@ from schemas.order import (
 )
 from models.enums import OrderStatus
 import services.order as order_service 
-from email.email_service import order_conformation_email,task_order_status_email
+from background.email_service import order_conformation_email,task_order_status_email
 
 
 
@@ -26,10 +26,11 @@ router = APIRouter()
 @router.post("/",response_model = OrderResponse,status_code=status.HTTP_201_CREATED)
 async def create_order(
     order_in:OrderCreate,
+    background_tasks: BackgroundTasks,
     db:DB,
     key: str = Header(..., alias="x-idempotency-key"),
     current_user=Depends(get_current_active_user),
-    background_tasks: BackgroundTasks 
+    
     
 
 ):
@@ -42,7 +43,7 @@ async def create_order(
             total_amount=float(order.total_amount),
             estimated_delivery_time=order.estimated_delivery_time or 30,
         )
-        return order
+    return order
 
 @router.get("/my",response_model = PaginateResponse[OrderSummary])
 async def get_my_orders(

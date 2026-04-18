@@ -72,6 +72,11 @@ class RestaurantResponse(RestaurantBase):
     id: int
     rating: float
     total_ratings: int
+
+
+   
+
+    
     status: RestaurantStatus
     image_url: str
     is_active: bool
@@ -86,6 +91,8 @@ class RestaurantResponse(RestaurantBase):
 class RestaurantListResponse(BaseModel):
     id: int
     name: str
+    address: str
+    description: Optional[str] = None
     cuisine_type: Optional[str] = None
     rating: float
     delivery_fee: float

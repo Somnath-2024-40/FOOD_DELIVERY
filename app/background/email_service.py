@@ -2,19 +2,19 @@ from fastapi import HTTPException, status
 import asyncio
 import logging
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from email.email import send_welcome_email,send_order_conformation_email,send_payment_success_email,send_payment_failed_email,order_status_email
+from background.email import send_welcome_email,send_order_conformation_email,send_payment_success_email,send_payment_failed_email,order_status_email
 
 from db.session import sessionlocal
 from models.menu import MenuItem
 from models.order import Order
 from models.enums import OrderStatus
-from payment.peyment_enum import PaymentStatus
+from payment.payment_enum import PaymentStatus, PaymentMethod
 from payment.payment_model import Payment
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ async def _restore_stock(
     await db.commit()
     logger.info(f"Restored stock for order {order.id}")
 
-async def _cencel_order(
+async def _cancel_order(
     db:AsyncSession,
     order:Order,
     customer_email:str,
@@ -240,9 +240,9 @@ async def verify_and_finalize_payment(
                     f"Failed to process payment {payment.id}: {last_error}"
                 )
                 await _cancel_order(db,order,customer_email,customer_name)
-            except Exception as e:
-                await db.rollback()
-                logger.error(f"Failed to process payment {payment.id}: {e}")
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Failed to process payment {payment.id}: {e}")
 
 
 

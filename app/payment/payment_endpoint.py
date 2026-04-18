@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, APIRouter, Depends, Form,Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
-from background_tasks import BackgroundTasks
+from fastapi import BackgroundTasks
 
 from core.dependencies import DB
 import payment.payment_service as payment_service         
@@ -10,7 +10,7 @@ from payment.payment_schema import PaymentCreate, PaymentResponse
 from payment.payment_enum import PaymentMethod
 from core.dependencies import get_current_active_user
 from models.user import User
-from email.email_service import send_payment_success_email,send_payment_failed_email,verify_and_finalize_payment
+from background.email_service import send_payment_success_email,send_payment_failed_email,verify_and_finalize_payment
 
 
 router = APIRouter()
@@ -45,10 +45,10 @@ async def process_payment(
     p= await create_payment(db, payment_info, current_user,key)  
     background_tasks.add_task(
         verify_and_finalize_payment,
-        order_id:order_id,
-        payment_id:payment_id,
-        amount:amount,
-        payment_method:payment_method
+        order_id=order_id,
+        payment_id=p.id,
+        amount=amount,
+        payment_method=payment_method
     )
     return p
 

@@ -7,7 +7,7 @@ from typing import Annotated,Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from background_tasks import BackgroundTasks
+from fastapi import BackgroundTasks
 
 from core.dependencies import DB, get_current_active_user  
 from core.security import create_access_token, create_refresh_token, decode_token
@@ -16,7 +16,7 @@ from schemas.auth import RefreshTokenRequest, Token
 from schemas.user import UserCreate, UserResponse            
 import services.user as user_service
 
-from email.email_service import welcome_email
+from background.email_service import welcome_email
 
 
 
