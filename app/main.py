@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi.staticfiles import StaticFiles
 
 from api.v1.api import api_router
 from core.config import settings
@@ -95,5 +96,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Use the same base path from your create_menu function
+UPLOAD_DIR = "/app/uploads" 
+
+# Mount the folder
+# directory: the actual folder on your computer/docker
+# path: the URL prefix
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.include_router(api_router, prefix="/api/v1")

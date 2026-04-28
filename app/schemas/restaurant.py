@@ -67,7 +67,7 @@ class RestaurantUpdate(BaseModel):
     estimated_delivery_time: Optional[int] = None
     status: Optional[str] = None
 
-# --- Full Detail Response ---
+
 class RestaurantResponse(RestaurantBase):
     id: int
     rating: float
